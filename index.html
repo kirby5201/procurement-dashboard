@@ -8,11 +8,8 @@
 </head>
 <body>
   <div class="app">
-    <!-- Sidebar -->
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark"></div>
-      </div>
+      <div class="brand"><div class="brand-mark"></div></div>
       <nav class="nav">
         <a class="nav-item active" href="#">
           <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
@@ -42,12 +39,11 @@
       <div class="avatar"></div>
     </aside>
 
-    <!-- Main -->
     <main class="main">
       <header class="topbar">
         <div>
           <h1>采购订单总览</h1>
-          <p class="subtitle">数据更新至 2026年10月19日</p>
+          <p class="subtitle">数据来源：ERP 采购订单 / 应付台账 · 仅统计「已通过」订单 · 汇率 USD=7.2 CNY</p>
         </div>
         <div class="topbar-actions">
           <div class="search">
@@ -60,74 +56,67 @@
         </div>
       </header>
 
-      <!-- KPI cards -->
       <section class="kpi-grid">
         <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▤</span>订单总数</div>
-          <div class="kpi-value">1,284</div>
-          <div class="kpi-trend up-green">▲ 12.5% 同比</div>
+          <div class="kpi-label"><span class="kpi-icon">▤</span>已通过订单</div>
+          <div class="kpi-value" id="kpiOrders">–</div>
+          <div class="kpi-trend up-gray">笔 · 全部申请单 189 笔</div>
         </div>
         <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▥</span>在途订单</div>
-          <div class="kpi-value">326</div>
-          <div class="kpi-trend up-blue">▲ 6.2% 较上月</div>
+          <div class="kpi-label"><span class="kpi-icon">▥</span>采购总额</div>
+          <div class="kpi-value" id="kpiAmount">–</div>
+          <div class="kpi-trend up-gray">人民币口径（外币已折算）</div>
         </div>
         <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▦</span>本月待交付</div>
-          <div class="kpi-value">87</div>
-          <div class="kpi-trend up-amber">12笔本周到期</div>
+          <div class="kpi-label"><span class="kpi-icon">▦</span>待出货</div>
+          <div class="kpi-value" id="kpiPending">–</div>
+          <div class="kpi-trend up-amber" id="kpiPendingSub">笔 · 件未发</div>
         </div>
         <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▧</span>延期订单 <span class="dot-red"></span></div>
-          <div class="kpi-value">23</div>
-          <div class="kpi-trend up-green">▼ 8.1% 环比改善</div>
+          <div class="kpi-label"><span class="kpi-icon">▧</span>应付未付</div>
+          <div class="kpi-value" id="kpiUnpaid">–</div>
+          <div class="kpi-trend up-blue" id="kpiPaySub">应付 / 已付</div>
         </div>
       </section>
 
-      <!-- Row 2: bar + doughnut -->
       <section class="row">
         <div class="card span-2">
           <div class="card-head">
-            <h2>供应商交期达成率对比</h2>
-            <div class="legend">
-              <span class="legend-item"><i class="sw" style="background:#0071E3"></i>实际达成</span>
-              <span class="legend-item"><i class="dash"></i>目标 90%</span>
-            </div>
+            <h2>供应商采购额 Top 8（人民币）</h2>
+            <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>采购额（万元）</span></div>
           </div>
-          <div class="bar-list" id="barList">
-            <!-- rows injected by app.js -->
-          </div>
+          <div class="bar-list" id="barList"></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><h2>订单状态分布</h2></div>
+          <div class="card-head"><h2>订单审批状态分布</h2></div>
           <div class="donut-wrap">
             <canvas id="statusDonut"></canvas>
             <div class="donut-center">
-              <span>订单总数</span>
-              <strong>1,284</strong>
+              <span>申请单总数</span>
+              <strong id="donutTotal">–</strong>
             </div>
           </div>
           <div class="donut-legend" id="donutLegend"></div>
         </div>
       </section>
 
-      <!-- Row 3: line + table -->
       <section class="row">
         <div class="card span-2">
           <div class="card-head">
-            <h2>采购金额趋势（实际 vs 计划）</h2>
-            <div class="legend">
-              <span class="legend-item"><i class="sw" style="background:#0071E3"></i>实际</span>
-              <span class="legend-item"><i class="dash"></i>计划</span>
-            </div>
+            <h2>月度采购金额趋势（万元）</h2>
+            <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>当月采购额</span></div>
           </div>
           <div class="chart-box"><canvas id="trendLine"></canvas></div>
+          <div class="range-note" id="rangeNote"></div>
         </div>
 
         <div class="card">
-          <div class="card-head"><h2>在途订单清单</h2></div>
+          <div class="card-head"><h2>在途出货明细</h2></div>
           <table class="order-table">
+            <thead>
+              <tr><th>订单号</th><th>供应商</th><th>料号</th><th>数量</th><th>未发</th><th>状态</th></tr>
+            </thead>
             <tbody id="orderTable"></tbody>
           </table>
         </div>
@@ -138,6 +127,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

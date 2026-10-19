@@ -5,77 +5,56 @@ const C = {
   green: '#34C759',
   amber: '#FF9F0A',
   red: '#FF3B30',
-  gray: '#6E6E73',
+  gray: '#8E8E93',
+  text2: '#6E6E73',
   grid: '#EBEBF0'
 };
 
-// ====== Data (示例数据，替换为你的真实接口) ======
-const suppliers = [
-  { name: '供应商 A', value: 96 },
-  { name: '供应商 B', value: 92 },
-  { name: '供应商 C', value: 88 },
-  { name: '供应商 D', value: 81 }
-];
-const target = 90;
+const STATUS_COLOR = {
+  '已通过': C.green,
+  '已撤回': C.amber,
+  '已拒绝': C.red,
+  '已删除': C.gray
+};
 
-const status = [
-  { label: '已完成', value: 58, color: C.green },
-  { label: '运输中', value: 22, color: C.blue },
-  { label: '处理中', value: 12, color: C.amber },
-  { label: '延期',   value: 8,  color: C.red }
-];
+const wan = v => '¥' + (v / 10000).toFixed(1) + '万';
 
-const months = ['3月','4月','5月','6月','7月','8月','9月','10月'];
-const actual =  [18, 24, 32, 28, 34, 42, 36, 38];
-const plan =    [20, 24, 30, 30, 32, 36, 36, 36];
+// ====== KPI ======
+document.getElementById('kpiOrders').textContent = DATA.kpi.orderCount;
+document.getElementById('kpiAmount').textContent = wan(DATA.kpi.totalCny);
+document.getElementById('kpiPending').textContent = DATA.kpi.pendingCount;
+document.getElementById('kpiPendingSub').textContent = `笔 · ${DATA.kpi.pendingQty.toLocaleString()} 件未发`;
+document.getElementById('kpiUnpaid').textContent = wan(DATA.kpi.unpaid);
+document.getElementById('kpiPaySub').textContent =
+  `应付 ${wan(DATA.kpi.payable)} / 已付 ${wan(DATA.kpi.paid)}`;
+document.getElementById('donutTotal').textContent =
+  DATA.statusDist.reduce((a, b) => a + b.value, 0);
 
-const orders = [
-  { no: 'PO-2410-008', meta: '供应商 A · 预计10月21日', pill: ['blue', '运输中'] },
-  { no: 'PO-2410-011', meta: '供应商 C · 预计10月23日', pill: ['amber', '处理中'] },
-  { no: 'PO-2410-014', meta: '供应商 B · 预计10月25日', pill: ['blue', '运输中'] },
-  { no: 'PO-2410-017', meta: '供应商 D · 预计10月26日', pill: ['red', '延期'] }
-];
-
-// ====== Render: horizontal bars with target line ======
+// ====== Supplier bars ======
 const barList = document.getElementById('barList');
-suppliers.forEach(s => {
+const maxAmt = Math.max(...DATA.suppliers.map(s => s.amt));
+DATA.suppliers.forEach(s => {
   const row = document.createElement('div');
   row.className = 'bar-row';
   row.innerHTML = `
-    <span class="bar-name">${s.name}</span>
+    <span class="bar-name" title="${s.name}">${s.name}</span>
     <div class="bar-track">
-      <div class="bar-fill ${s.value >= target ? 'on' : 'off'}" style="width:${s.value}%"></div>
+      <div class="bar-fill on" style="width:${(s.amt / maxAmt * 100).toFixed(1)}%"></div>
     </div>
-    <span class="bar-value">${s.value}%</span>`;
+    <span class="bar-value">${(s.amt / 10000).toFixed(1)}万</span>`;
   barList.appendChild(row);
 });
 
-// target dashed line overlay (approximate at 90% position)
-const trackFirst = barList.querySelector('.bar-track');
-function drawTargetLine() {
-  const old = barList.querySelector('.target-line');
-  if (old) old.remove();
-  const x = (target / 100) * trackFirst.getBoundingClientRect().width;
-  const line = document.createElement('div');
-  line.className = 'target-line';
-  line.style.cssText = `position:absolute;left:${x}px;top:-8px;bottom:-8px;border-left:2px dashed #C7C7CE;z-index:2;pointer-events:none;`;
-  trackFirst.parentElement.style.position = 'relative';
-  trackFirst.parentElement.appendChild(line);
-}
-drawTargetLine();
-window.addEventListener('resize', drawTargetLine);
-
-// ====== Render: donut ======
+// ====== Donut: approval status ======
 new Chart(document.getElementById('statusDonut'), {
   type: 'doughnut',
   data: {
-    labels: status.map(s => s.label),
+    labels: DATA.statusDist.map(s => s.name),
     datasets: [{
-      data: status.map(s => s.value),
-      backgroundColor: status.map(s => s.color),
+      data: DATA.statusDist.map(s => s.value),
+      backgroundColor: DATA.statusDist.map(s => STATUS_COLOR[s.name] || C.gray),
       borderWidth: 0,
-      spacing: 2,
-      circumference: 360
+      spacing: 2
     }]
   },
   options: {
@@ -85,22 +64,22 @@ new Chart(document.getElementById('statusDonut'), {
 });
 
 const legend = document.getElementById('donutLegend');
-status.forEach(s => {
+DATA.statusDist.forEach(s => {
   const item = document.createElement('span');
   item.className = 'dl-item';
-  item.innerHTML = `<i class="dl-dot" style="background:${s.color}"></i>${s.label} ${s.value}%`;
+  item.innerHTML = `<i class="dl-dot" style="background:${STATUS_COLOR[s.name] || C.gray}"></i>${s.name} ${s.value}`;
   legend.appendChild(item);
 });
 
-// ====== Render: trend line ======
+// ====== Trend line: monthly amount (万元) ======
 new Chart(document.getElementById('trendLine'), {
   type: 'line',
   data: {
-    labels: months,
+    labels: DATA.trend.map(t => t.m.slice(5).replace('-', '月')),
     datasets: [
       {
-        label: '实际',
-        data: actual,
+        label: '采购额(万元)',
+        data: DATA.trend.map(t => +(t.amt / 10000).toFixed(1)),
         borderColor: C.primary,
         backgroundColor: (ctx) => {
           const { chart } = ctx;
@@ -117,15 +96,6 @@ new Chart(document.getElementById('trendLine'), {
         pointBackgroundColor: '#fff',
         pointBorderColor: C.primary,
         pointBorderWidth: 2
-      },
-      {
-        label: '计划',
-        data: plan,
-        borderColor: '#B8B8BE',
-        borderDash: [6, 6],
-        pointRadius: 0,
-        tension: .35,
-        fill: false
       }
     ]
   },
@@ -134,19 +104,26 @@ new Chart(document.getElementById('trendLine'), {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { color: C.gray, font: { size: 11 } } },
-      y: { grid: { color: C.grid }, ticks: { color: C.gray, font: { size: 11 } }, border: { display: false } }
+      x: { grid: { display: false }, ticks: { color: C.text2, font: { size: 11 } } },
+      y: { grid: { color: C.grid }, ticks: { color: C.text2, font: { size: 11 } }, border: { display: false } }
     }
   }
 });
 
-// ====== Render: order table ======
+document.getElementById('rangeNote').textContent =
+  `国内订单 ${DATA.range.domestic.count} 笔 · ${wan(DATA.range.domestic.amt)}　｜　国外订单 ${DATA.range.foreign.count} 笔 · ${wan(DATA.range.foreign.amt)}`;
+
+// ====== Detail table ======
 const tbody = document.getElementById('orderTable');
-orders.forEach(o => {
+DATA.detail.forEach(o => {
+  const pill = o.status === '部分到货' ? 'blue' : 'amber';
   const tr = document.createElement('tr');
   tr.innerHTML = `
-    <td class="order-no">${o.no}</td>
-    <td class="order-meta">${o.meta}</td>
-    <td style="text-align:right"><span class="pill ${o.pill[0]}">${o.pill[1]}</span></td>`;
+    <td class="order-no">${o.po}</td>
+    <td class="order-meta">${o.supplier}</td>
+    <td class="order-meta">${o.pn}</td>
+    <td class="order-meta">${o.qty.toLocaleString()}</td>
+    <td class="order-meta">${o.unship.toLocaleString()}</td>
+    <td><span class="pill ${pill}">${o.status}</span></td>`;
   tbody.appendChild(tr);
 });

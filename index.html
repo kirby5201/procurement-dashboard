@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>采购订单总览 · Procurement Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+      </div>
+      <nav class="nav">
+        <a class="nav-item active" href="#">
+          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+          <span>总览</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v3H4zM4 10.5h16v3H4zM4 16h16v3H4z"/></svg>
+          <span>采购订单</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v7H4zM4 14h7v6H4zM15 14h5v6h-5z"/></svg>
+          <span>供应商</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24"><path d="M7 3h10v6l-3 4 3 4v4H7v-4l3-4-3-4z"/></svg>
+          <span>物料库</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24"><path d="M5 19 12 5l7 14M8.5 14h7"/></svg>
+          <span>数据分析</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
+          <span>设置</span>
+        </a>
+      </nav>
+      <div class="avatar"></div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1>采购订单总览</h1>
+          <p class="subtitle">数据更新至 2026年10月19日</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="search">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="text" placeholder="搜索订单号 / 供应商" />
+          </div>
+          <button class="chip">全部供应商 <span class="caret">▾</span></button>
+          <button class="chip">近30天 <span class="caret">▾</span></button>
+          <button class="btn-primary">新建订单</button>
+        </div>
+      </header>
+
+      <!-- KPI cards -->
+      <section class="kpi-grid">
+        <div class="card kpi">
+          <div class="kpi-label"><span class="kpi-icon">▤</span>订单总数</div>
+          <div class="kpi-value">1,284</div>
+          <div class="kpi-trend up-green">▲ 12.5% 同比</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><span class="kpi-icon">▥</span>在途订单</div>
+          <div class="kpi-value">326</div>
+          <div class="kpi-trend up-blue">▲ 6.2% 较上月</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><span class="kpi-icon">▦</span>本月待交付</div>
+          <div class="kpi-value">87</div>
+          <div class="kpi-trend up-amber">12笔本周到期</div>
+        </div>
+        <div class="card kpi">
+          <div class="kpi-label"><span class="kpi-icon">▧</span>延期订单 <span class="dot-red"></span></div>
+          <div class="kpi-value">23</div>
+          <div class="kpi-trend up-green">▼ 8.1% 环比改善</div>
+        </div>
+      </section>
+
+      <!-- Row 2: bar + doughnut -->
+      <section class="row">
+        <div class="card span-2">
+          <div class="card-head">
+            <h2>供应商交期达成率对比</h2>
+            <div class="legend">
+              <span class="legend-item"><i class="sw" style="background:#0071E3"></i>实际达成</span>
+              <span class="legend-item"><i class="dash"></i>目标 90%</span>
+            </div>
+          </div>
+          <div class="bar-list" id="barList">
+            <!-- rows injected by app.js -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>订单状态分布</h2></div>
+          <div class="donut-wrap">
+            <canvas id="statusDonut"></canvas>
+            <div class="donut-center">
+              <span>订单总数</span>
+              <strong>1,284</strong>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </section>
+
+      <!-- Row 3: line + table -->
+      <section class="row">
+        <div class="card span-2">
+          <div class="card-head">
+            <h2>采购金额趋势（实际 vs 计划）</h2>
+            <div class="legend">
+              <span class="legend-item"><i class="sw" style="background:#0071E3"></i>实际</span>
+              <span class="legend-item"><i class="dash"></i>计划</span>
+            </div>
+          </div>
+          <div class="chart-box"><canvas id="trendLine"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>在途订单清单</h2></div>
+          <table class="order-table">
+            <tbody id="orderTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="foot">Dashboard Color System · 浅灰大底 · 白色卡片 · 蓝色主调 · 语义色克制点缀</footer>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

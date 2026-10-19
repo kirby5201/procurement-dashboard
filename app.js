@@ -19,10 +19,24 @@ const STATUS_COLOR = {
 
 const wan = v => '¥' + (v / 10000).toFixed(1) + '万';
 
-// ====== KPI ======
-document.getElementById('kpiOrders').textContent = DATA.kpi.orderCount;
-document.getElementById('kpiAmount').textContent = wan(DATA.kpi.totalCny);
-document.getElementById('kpiPending').textContent = DATA.kpi.pendingCount;
+// ====== Count-up KPI ======
+function countUp(el, target, decimals = 0, prefix = '', suffix = '', dur = 1100) {
+  const t0 = performance.now();
+  function tick(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    const v = target * e;
+    el.textContent = prefix + v.toLocaleString(undefined, {
+      minimumFractionDigits: decimals, maximumFractionDigits: decimals
+    }) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+countUp(document.getElementById('kpiOrders'), DATA.kpi.orderCount);
+countUp(document.getElementById('kpiAmount'), DATA.kpi.totalCny / 10000, 1, '¥', '万');
+countUp(document.getElementById('kpiPending'), DATA.kpi.pendingCount);
 document.getElementById('kpiPendingSub').textContent = `笔 · ${DATA.kpi.pendingQty.toLocaleString()} 件未发`;
 document.getElementById('kpiUnpaid').textContent = wan(DATA.kpi.unpaid);
 document.getElementById('kpiPaySub').textContent =
@@ -30,19 +44,24 @@ document.getElementById('kpiPaySub').textContent =
 document.getElementById('donutTotal').textContent =
   DATA.statusDist.reduce((a, b) => a + b.value, 0);
 
-// ====== Supplier bars ======
+// ====== Supplier bars (grow-in) ======
 const barList = document.getElementById('barList');
 const maxAmt = Math.max(...DATA.suppliers.map(s => s.amt));
-DATA.suppliers.forEach(s => {
+DATA.suppliers.forEach((s, i) => {
   const row = document.createElement('div');
   row.className = 'bar-row';
   row.innerHTML = `
     <span class="bar-name" title="${s.name}">${s.name}</span>
     <div class="bar-track">
-      <div class="bar-fill on" style="width:${(s.amt / maxAmt * 100).toFixed(1)}%"></div>
+      <div class="bar-fill on" style="width:0%"></div>
     </div>
     <span class="bar-value">${(s.amt / 10000).toFixed(1)}万</span>`;
   barList.appendChild(row);
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      row.querySelector('.bar-fill').style.width = (s.amt / maxAmt * 100).toFixed(1) + '%';
+    }, i * 90);
+  });
 });
 
 // ====== Donut: approval status ======
@@ -126,4 +145,46 @@ DATA.detail.forEach(o => {
     <td class="order-meta">${o.unship.toLocaleString()}</td>
     <td><span class="pill ${pill}">${o.status}</span></td>`;
   tbody.appendChild(tr);
+});
+
+// empty state row
+const emptyRow = document.createElement('tr');
+emptyRow.style.display = 'none';
+emptyRow.innerHTML = `<td colspan="6" style="text-align:center;color:var(--text-2);padding:24px 0;">无匹配的在途订单</td>`;
+tbody.appendChild(emptyRow);
+const detailRows = () => [...tbody.querySelectorAll('tr')].filter(r => r !== emptyRow);
+
+// ====== Search: filters in-transit table by po / supplier / pn ======
+const searchInput = document.querySelector('.search input');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  let shown = 0;
+  detailRows().forEach(tr => {
+    const match = tr.textContent.toLowerCase().includes(q);
+    tr.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  emptyRow.style.display = q && shown === 0 ? '' : 'none';
+});
+
+// ====== Nav: highlight + smooth scroll to relevant section ======
+const navItems = [...document.querySelectorAll('.nav-item')];
+const cards = [...document.querySelectorAll('.card')];
+const byTitle = t => cards.find(c => c.querySelector('.card-head h2')?.textContent.includes(t));
+const anchorMap = {
+  '总览': document.querySelector('.main'),
+  '采购订单': byTitle('在途出货明细'),
+  '供应商': byTitle('供应商采购额'),
+  '数据分析': byTitle('月度采购金额趋势'),
+  '物料库': byTitle('在途出货明细'),
+};
+navItems.forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    navItems.forEach(x => x.classList.remove('active'));
+    a.classList.add('active');
+    const label = a.querySelector('span').textContent;
+    const target = anchorMap[label];
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 });

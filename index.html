@@ -10,30 +10,24 @@
   <div class="app">
     <aside class="sidebar">
       <div class="brand"><div class="brand-mark"></div></div>
-      <nav class="nav">
-        <a class="nav-item active" href="#">
-          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
-          <span>总览</span>
+      <nav class="nav" id="nav">
+        <a class="nav-item active" data-view="overview" href="#">
+          <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>总览</span>
         </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24"><path d="M4 5h16v3H4zM4 10.5h16v3H4zM4 16h16v3H4z"/></svg>
-          <span>采购订单</span>
+        <a class="nav-item" data-view="orders" href="#">
+          <svg viewBox="0 0 24 24"><path d="M4 5h16v3H4zM4 10.5h16v3H4zM4 16h16v3H4z"/></svg><span>采购订单</span>
         </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24"><path d="M4 4h16v7H4zM4 14h7v6H4zM15 14h5v6h-5z"/></svg>
-          <span>供应商</span>
+        <a class="nav-item" data-scroll="supplier" href="#">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16v7H4zM4 14h7v6H4zM15 14h5v6h-5z"/></svg><span>供应商</span>
         </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24"><path d="M7 3h10v6l-3 4 3 4v4H7v-4l3-4-3-4z"/></svg>
-          <span>物料库</span>
+        <a class="nav-item" data-view="materials" href="#">
+          <svg viewBox="0 0 24 24"><path d="M7 3h10v6l-3 4 3 4v4H7v-4l3-4-3-4z"/></svg><span>物料库</span>
         </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24"><path d="M5 19 12 5l7 14M8.5 14h7"/></svg>
-          <span>数据分析</span>
+        <a class="nav-item" data-view="analytics" href="#">
+          <svg viewBox="0 0 24 24"><path d="M7 19v-6M12 19V5M17 19v-9"/></svg><span>数据分析</span>
         </a>
-        <a class="nav-item" href="#">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg>
-          <span>设置</span>
+        <a class="nav-item" data-view="settings" href="#">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6A7 7 0 0 0 19 12z"/></svg><span>设置</span>
         </a>
       </nav>
       <div class="avatar"></div>
@@ -42,89 +36,164 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <h1>采购订单总览</h1>
-          <p class="subtitle">数据来源：ERP 采购订单 / 应付台账 · 仅统计「已通过」订单 · 汇率 USD=7.2 CNY</p>
+          <h1 id="viewTitle">采购订单总览</h1>
+          <p class="subtitle">数据来源：ERP 采购订单 / 应付台账 · 仅统计「已通过」订单 · 汇率 USD=7.2 EUR=7.8 CNY</p>
         </div>
         <div class="topbar-actions">
           <div class="search">
             <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input type="text" placeholder="搜索订单号 / 供应商" />
+            <input id="searchInput" type="text" placeholder="搜索订单号 / 供应商 / 料号" />
           </div>
-          <button class="chip">全部供应商 <span class="caret">▾</span></button>
-          <button class="chip">近30天 <span class="caret">▾</span></button>
-          <button class="btn-primary">新建订单</button>
+          <select id="supplierFilter" class="chip-select"></select>
+          <div class="seg" id="rangeSeg">
+            <button data-range="全部" class="active">全部</button>
+            <button data-range="近6月">近6月</button>
+            <button data-range="近3月">近3月</button>
+          </div>
+          <button class="btn-primary" id="newOrderBtn">+ 新建订单</button>
         </div>
       </header>
 
-      <section class="kpi-grid">
-        <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▤</span>已通过订单</div>
-          <div class="kpi-value" id="kpiOrders">–</div>
-          <div class="kpi-trend up-gray">笔 · 全部申请单 189 笔</div>
-        </div>
-        <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▥</span>采购总额</div>
-          <div class="kpi-value" id="kpiAmount">–</div>
-          <div class="kpi-trend up-gray">人民币口径（外币已折算）</div>
-        </div>
-        <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▦</span>待出货</div>
-          <div class="kpi-value" id="kpiPending">–</div>
-          <div class="kpi-trend up-amber" id="kpiPendingSub">笔 · 件未发</div>
-        </div>
-        <div class="card kpi">
-          <div class="kpi-label"><span class="kpi-icon">▧</span>应付未付</div>
-          <div class="kpi-value" id="kpiUnpaid">–</div>
-          <div class="kpi-trend up-blue" id="kpiPaySub">应付 / 已付</div>
-        </div>
-      </section>
-
-      <section class="row">
-        <div class="card span-2">
-          <div class="card-head">
-            <h2>供应商采购额 Top 8（人民币）</h2>
-            <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>采购额（万元）</span></div>
+      <!-- ========== 总览 ========== -->
+      <section class="view" id="view-overview">
+        <div class="kpi-grid">
+          <div class="card kpi">
+            <div class="kpi-label"><span class="kpi-icon">▤</span>已通过订单</div>
+            <div class="kpi-value" id="kpiOrders">–</div>
+            <div class="kpi-trend up-gray" id="kpiOrdersSub">笔</div>
           </div>
-          <div class="bar-list" id="barList"></div>
+          <div class="card kpi">
+            <div class="kpi-label"><span class="kpi-icon">▥</span>采购总额</div>
+            <div class="kpi-value" id="kpiAmount">–</div>
+            <div class="kpi-trend up-gray">人民币口径（外币已折算）</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label"><span class="kpi-icon">▦</span>待出货</div>
+            <div class="kpi-value" id="kpiPending">–</div>
+            <div class="kpi-trend up-amber" id="kpiPendingSub">笔 · 件未发</div>
+          </div>
+          <div class="card kpi">
+            <div class="kpi-label"><span class="kpi-icon">▧</span>应付未付</div>
+            <div class="kpi-value" id="kpiUnpaid">–</div>
+            <div class="kpi-trend up-blue" id="kpiPaySub">应付 / 已付</div>
+          </div>
         </div>
 
-        <div class="card">
-          <div class="card-head"><h2>订单审批状态分布</h2></div>
-          <div class="donut-wrap">
-            <canvas id="statusDonut"></canvas>
-            <div class="donut-center">
-              <span>申请单总数</span>
-              <strong id="donutTotal">–</strong>
+        <div class="row" id="overviewRow1">
+          <div class="card span-2" id="supplierCard">
+            <div class="card-head">
+              <h2>供应商采购额 Top 8（人民币）</h2>
+              <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>采购额（万元）</span></div>
             </div>
+            <div class="bar-list" id="barList"></div>
           </div>
-          <div class="donut-legend" id="donutLegend"></div>
+          <div class="card">
+            <div class="card-head"><h2>订单审批状态分布</h2></div>
+            <div class="donut-wrap">
+              <canvas id="statusDonut"></canvas>
+              <div class="donut-center"><span>申请单总数</span><strong id="donutTotal">–</strong></div>
+            </div>
+            <div class="donut-legend" id="donutLegend"></div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="card span-2">
+            <div class="card-head">
+              <h2>月度采购金额趋势（万元）</h2>
+              <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>当月采购额</span></div>
+            </div>
+            <div class="chart-box"><canvas id="trendLine"></canvas></div>
+            <div class="range-note" id="rangeNote"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>在途出货明细</h2></div>
+            <table class="order-table">
+              <thead><tr><th>订单号</th><th>供应商</th><th>料号</th><th>金额</th><th>未发</th><th>状态</th></tr></thead>
+              <tbody id="orderTable"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
-      <section class="row">
-        <div class="card span-2">
-          <div class="card-head">
-            <h2>月度采购金额趋势（万元）</h2>
-            <div class="legend"><span class="legend-item"><i class="sw" style="background:#0071E3"></i>当月采购额</span></div>
-          </div>
-          <div class="chart-box"><canvas id="trendLine"></canvas></div>
-          <div class="range-note" id="rangeNote"></div>
-        </div>
-
+      <!-- ========== 采购订单全量列表 ========== -->
+      <section class="view hidden" id="view-orders">
         <div class="card">
-          <div class="card-head"><h2>在途出货明细</h2></div>
-          <table class="order-table">
-            <thead>
-              <tr><th>订单号</th><th>供应商</th><th>料号</th><th>数量</th><th>未发</th><th>状态</th></tr>
-            </thead>
-            <tbody id="orderTable"></tbody>
+          <div class="card-head"><h2>全部采购订单（<span id="orderCountText">0</span> 行）</h2></div>
+          <table class="order-table big">
+            <thead><tr><th>订单号</th><th>月份</th><th>供应商</th><th>料号</th><th>描述</th><th>数量</th><th>单价¥</th><th>金额¥</th><th>状态</th></tr></thead>
+            <tbody id="fullOrderTable"></tbody>
           </table>
         </div>
       </section>
 
-      <footer class="foot">Dashboard Color System · 浅灰大底 · 白色卡片 · 蓝色主调 · 语义色克制点缀</footer>
+      <!-- ========== 物料库 ========== -->
+      <section class="view hidden" id="view-materials">
+        <div class="card">
+          <div class="card-head"><h2>物料库（按料号汇总，<span id="matCountText">0</span> 项）</h2></div>
+          <table class="order-table big">
+            <thead><tr><th>料号</th><th>物料描述</th><th>供应商</th><th>订单笔数</th><th>累计数量</th><th>累计金额¥</th></tr></thead>
+            <tbody id="materialTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========== 数据分析 ========== -->
+      <section class="view hidden" id="view-analytics">
+        <div class="row">
+          <div class="card span-2">
+            <div class="card-head"><h2>月度采购：笔数 vs 金额</h2></div>
+            <div class="chart-box tall"><canvas id="comboChart"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>国内 / 国外订单</h2></div>
+            <div class="rg-block">
+              <div class="rg-row"><span>国内</span><b id="rgDomAmt">–</b><i id="rgDomBar" class="rg-bar"></i></div>
+              <div class="rg-row"><span>国外</span><b id="rgForAmt">–</b><i id="rgForBar" class="rg-bar"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="card">
+            <div class="card-head"><h2>订单金额分布（笔数）</h2></div>
+            <div class="chart-box"><canvas id="histChart"></canvas></div>
+          </div>
+          <div class="card span-2">
+            <div class="card-head"><h2>供应商采购额 Top 10</h2></div>
+            <div class="bar-list" id="barList10"></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="foot">Procurement Dashboard · 浅色模式 · 主色 #0071E3 · 数据实时从 ERP 表生成</footer>
     </main>
   </div>
+
+  <!-- 新建订单弹窗 -->
+  <div class="modal-mask hidden" id="modalMask">
+    <div class="modal">
+      <div class="modal-head"><h3>新建采购订单</h3><button class="modal-x" id="modalClose">×</button></div>
+      <div class="modal-body">
+        <label>订单号<input id="fPo" placeholder="如 20261019001" /></label>
+        <label>供应商<input id="fSupplier" placeholder="公司全称" /></label>
+        <label>料号<input id="fPn" placeholder="自建料号" /></label>
+        <label>物料描述<input id="fDesc" placeholder="具体配置描述" /></label>
+        <div class="modal-grid2">
+          <label>数量<input id="fQty" type="number" placeholder="0" /></label>
+          <label>单价（¥）<input id="fUnit" type="number" placeholder="0.00" /></label>
+        </div>
+        <label>状态
+          <select id="fStatus"><option>已通过</option><option>审批中</option><option>待发货</option></select>
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="chip" id="modalCancel">取消</button>
+        <button class="btn-primary" id="modalSave">保存订单</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="data.js"></script>

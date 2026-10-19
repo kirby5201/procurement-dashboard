@@ -1,132 +1,98 @@
-# -*- coding: utf-8 -*-
-"""从 ERP 采购订单 + 应付表真实计算仪表盘数据，输出 data.js。"""
-import openpyxl, sys, json, datetime
-from collections import defaultdict, OrderedDict
-sys.stdout.reconfigure(encoding='utf-8')
+import openpyxl, json, datetime
+from collections import defaultdict
 
 F1 = r"C:\Users\kirby\Desktop\简历\赛柯实习\ERP_hub_采购订单 ！ (1).xlsx"
 F2 = r"C:\Users\kirby\Desktop\简历\赛柯实习\ERP_hub_应付.xlsx"
-OUT = r"C:\Users\kirby\Doubao\chats\2026-10-19\new-chat\procurement-dashboard\data.js"
+FX = {"USD": 7.2, "EUR": 7.8, "CNY": 1.0}
 
-USD = 7.2
-EUR = 7.8
+def cny(amount, ccy):
+    try:
+        return float(amount or 0) * FX.get(ccy, 1.0)
+    except Exception:
+        return 0.0
 
-def num(v):
+# ---- 采购订单 ----
+wb = openpyxl.load_workbook(F1, read_only=False, data_only=True)
+ws = wb[wb.sheetnames[0]]
+rows = list(ws.iter_rows(values_only=True))[1:]
+
+orders = []
+order_totals = {}   # po -> 订单总价(col16, 原币)
+order_ccy = {}
+for r in rows:
+    po, odate, supplier, pn, desc = r[4], r[3], r[6], r[20], r[26]
+    qty, unit, ccy, line = r[27], r[28], r[29], r[30]
+    status, scope = r[7], r[17]
+    if not po:
+        continue
+    ym = odate.strftime("%Y-%m") if isinstance(odate, datetime.datetime) else ""
+    orders.append({
+        "po": str(po).strip(),
+        "ym": ym,
+        "supplier": (supplier or "").strip(),
+        "pn": (pn or "").strip(),
+        "desc": (desc or "").strip(),
+        "qty": float(qty or 0),
+        "unitCny": round(cny(unit, ccy), 2),
+        "lineCny": round(cny(line, ccy), 2),
+        "status": status or "",
+        "domestic": (scope == "国内订单"),
+    })
+    if po not in order_totals:
+        order_totals[po] = r[16] or 0
+        order_ccy[po] = ccy
+
+approved = [o for o in orders if o["status"] == "已通过"]
+sum_line = sum(o["lineCny"] for o in approved)
+sum_order_total = sum(cny(order_totals[p], order_ccy[p]) for p in order_totals)
+print("通过行数:", len(approved), " 按行总价sum:", round(sum_line), " 按订单总价sum:", round(sum_order_total))
+
+# ---- 应付 ----
+wb2 = openpyxl.load_workbook(F2, read_only=False, data_only=True)
+ws2 = wb2[wb2.sheetnames[0]]
+aprows = list(ws2.iter_rows(values_only=True))[1:]
+
+def money(v):
     if v is None: return 0.0
-    if isinstance(v, (int, float)): return float(v)
-    s = str(v).replace(",", "").replace("¥", "").replace("$", "").strip()
+    s = str(v).replace("¥", "").replace("$", "").replace(",", "").strip()
     try: return float(s)
     except: return 0.0
 
-def to_cny(amount, currency):
-    c = str(currency).strip().upper()
-    if c == "USD": return amount * USD
-    if c == "EUR": return amount * EUR
-    return amount
+payable = paid = 0.0
+pending = []
+for r in aprows:
+    payable += money(r[9])
+    paid += money(r[10])
+    try:
+        qty = float(r[5] or 0)
+    except Exception:
+        qty = 0
+    try:
+        unship = float(r[19] or 0)
+    except Exception:
+        unship = 0
+    if unship > 0:
+        eta = r[17]
+        eta_s = eta.strftime("%Y-%m-%d") if isinstance(eta, datetime.datetime) else (str(eta) if eta else "—")
+        pending.append({
+            "po": str(r[1] or "").strip(),
+            "supplier": (r[3] or "").strip(),
+            "pn": (r[4] or "").strip(),
+            "qty": qty,
+            "amt": money(r[9]),
+            "eta": eta_s,
+            "unship": unship,
+            "status": "待发货" if abs(unship - qty) < 1e-6 else "部分到货",
+        })
 
-# ---------- File1 采购订单 ----------
-wb = openpyxl.load_workbook(F1, read_only=False, data_only=True)
-ws = wb["采购订单 ！"]
-rows = list(ws.iter_rows(values_only=True))
-h = rows[0]
-ix = {k: i for i, k in enumerate(h)}
-data1 = [r for r in rows[1:] if any(v not in (None, "") for v in r)]
-wb.close()
+print("应付:", round(payable), "已付:", round(paid), "未付:", round(payable-paid))
+print("在途行数:", len(pending))
 
-def g(r, name): return r[ix[name]]
-
-# 状态分布（全部 189 笔）
-status_counter = defaultdict(int)
-for r in data1:
-    status_counter[str(g(r, "申请状态"))] += 1
-
-# 仅已通过
-passed = [r for r in data1 if str(g(r, "申请状态")) == "已通过"]
-
-total_cny = 0.0
-month_count = defaultdict(int)
-month_amt = defaultdict(float)
-supplier = defaultdict(float)
-domestic = {"count": 0, "amt": 0.0}
-foreign = {"count": 0, "amt": 0.0}
-
-for r in passed:
-    amt = to_cny(num(g(r, "总价")), g(r, "币种"))
-    total_cny += amt
-    od = g(r, "订单日期")
-    if isinstance(od, datetime.datetime):
-        key = od.strftime("%Y-%m")
-        month_count[key] += 1
-        month_amt[key] += amt
-    sup = str(g(r, "公司名称")).strip()
-    supplier[sup] += amt
-    rng = str(g(r, "订单范围"))
-    if "国外" in rng:
-        foreign["count"] += 1; foreign["amt"] += amt
-    else:
-        domestic["count"] += 1; domestic["amt"] += amt
-
-months = sorted(month_count.keys())
-trend = [{"m": m, "count": month_count[m], "amt": round(month_amt[m])} for m in months]
-
-top_sup = sorted(supplier.items(), key=lambda x: -x[1])[:8]
-suppliers = [{"name": n, "amt": round(a)} for n, a in top_sup]
-
-# ---------- File2 应付 ----------
-wb = openpyxl.load_workbook(F2, read_only=True, data_only=True)
-ws = wb["应付"]
-rows = list(ws.iter_rows(values_only=True))
-h2 = rows[0]
-ix2 = {k: i for i, k in enumerate(h2)}
-data2 = [r for r in rows[1:] if any(v not in (None, "") for v in r)]
-wb.close()
-def g2(r, name): return r[ix2[name]]
-
-payable = sum(num(g2(r, "AP/应付 CNY")) for r in data2)
-paid = sum(num(g2(r, "实付 CNY")) for r in data2)
-unpaid = payable - paid
-
-pending = [r for r in data2 if num(g2(r, "未出货数量")) > 0]
-pending_qty = sum(num(g2(r, "未出货数量")) for r in pending)
-
-detail = []
-for r in pending:
-    eta = g2(r, "预计出货时间（合同）")
-    eta_s = eta.strftime("%Y-%m-%d") if isinstance(eta, datetime.datetime) else ""
-    shipped = num(g2(r, "已出货数量"))
-    status = "部分到货" if shipped > 0 else "待发货"
-    detail.append({
-        "po": str(g2(r, "订单编号")),
-        "supplier": str(g2(r, "公司名称/公司名称")) if "公司名称/公司名称" in ix2 else str(g2(r, "CompanyName/公司名称")),
-        "pn": str(g2(r, "料号")),
-        "qty": num(g2(r, "数量")),
-        "eta": eta_s,
-        "unship": int(num(g2(r, "未出货数量"))),
-        "status": status,
-    })
-
-result = OrderedDict([
-    ("kpi", {
-        "orderCount": len(passed),
-        "totalCny": round(total_cny),
-        "pendingCount": len(pending),
-        "pendingQty": int(pending_qty),
-        "payable": round(payable),
-        "paid": round(paid),
-        "unpaid": round(unpaid),
-    }),
-    ("statusDist", [{"name": k, "value": v} for k, v in sorted(status_counter.items(), key=lambda x: -x[1])]),
-    ("trend", trend),
-    ("suppliers", suppliers),
-    ("range", {
-        "domestic": {"count": domestic["count"], "amt": round(domestic["amt"])},
-        "foreign": {"count": foreign["count"], "amt": round(foreign["amt"])},
-    }),
-    ("detail", detail),
-])
-
-js = "// 自动从 ERP 表计算生成，勿手改。汇率：USD=%.1f EUR=%.1f\nconst DATA = %s;\n" % (USD, EUR, json.dumps(result, ensure_ascii=False, indent=2))
-with open(OUT, "w", encoding="utf-8") as f:
-    f.write(js)
-
-print(json.dumps(result, ensure_ascii=False, indent=2))
+out = {
+    "payable": {"payable": round(payable), "paid": round(paid), "unpaid": round(payable - paid)},
+    "orders": orders,
+    "pending": pending,
+}
+with open(r"C:\Users\kirby\Doubao\chats\2026-10-19\new-chat\procurement-dashboard\data.js", "w", encoding="utf-8") as f:
+    f.write("window.DATA = " + json.dumps(out, ensure_ascii=False, indent=1) + ";\n")
+print("data.js written, orders:", len(orders))

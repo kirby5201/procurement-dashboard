@@ -11,6 +11,7 @@ const fmt = n => Number(n).toLocaleString('zh-CN', { maximumFractionDigits: 0 })
 // ====== State ======
 const state = { supplier: '全部', range: '全部', q: '' };
 let charts = {};
+let donutFocus = null;
 
 const approvedAll = DATA.orders.filter(o => o.status === '已通过');
 const maxYm = approvedAll.map(o => o.ym).filter(Boolean).sort().slice(-1)[0];
@@ -71,10 +72,16 @@ function renderBars(containerId, list, n) {
   list.slice(0, n).forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'bar-row';
+    row.title = '点击筛选该供应商';
     row.innerHTML = `
       <span class="bar-name" title="${s.name}">${s.name}</span>
       <div class="bar-track"><div class="bar-fill on" style="width:0%"></div></div>
       <span class="bar-value">${(s.amt / 10000).toFixed(1)}万</span>`;
+    row.addEventListener('click', () => {
+      state.supplier = (state.supplier === s.name) ? '全部' : s.name;
+      document.getElementById('supplierFilter').value = state.supplier;
+      renderAll();
+    });
     el.appendChild(row);
     requestAnimationFrame(() => setTimeout(() => {
       row.querySelector('.bar-fill').style.width = (s.amt / max * 100).toFixed(1) + '%';
@@ -106,22 +113,67 @@ function renderCharts() {
   const sd = {};
   allFiltered().forEach(o => { sd[o.status] = (sd[o.status] || 0) + 1; });
   const sdKeys = Object.keys(sd);
+  const totalCount = allFiltered().length;
+  if (donutFocus && !sd[donutFocus]) donutFocus = null;
+  const updateDonutCenter = (label) => {
+    const lab = document.getElementById('donutCenterLabel');
+    const num = document.getElementById('donutTotal');
+    if (label) {
+      lab.textContent = label;
+      num.textContent = sd[label];
+      num.style.color = STATUS_COLOR[label] || C.gray;
+    } else {
+      lab.textContent = '申请单总数';
+      num.textContent = totalCount;
+      num.style.color = '';
+    }
+  };
   charts.donut = new Chart(document.getElementById('statusDonut'), {
     type: 'doughnut',
     data: { labels: sdKeys, datasets: [{
       data: sdKeys.map(k => sd[k]),
       backgroundColor: sdKeys.map(k => STATUS_COLOR[k] || C.gray),
-      borderWidth: 0, spacing: 2, hoverOffset: 12
+      borderWidth: 0, spacing: 2, hoverOffset: 16
     }]},
-    options: { cutout: '72%', plugins: { legend: { display: false } }, animation: { animateRotate: true, duration: 900 } }
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+      animation: { animateRotate: true, duration: 900 },
+      onHover: (evt, els) => {
+        evt.native.target.style.cursor = els.length ? 'pointer' : 'default';
+        if (els.length) updateDonutCenter(sdKeys[els[0].index]);
+        else updateDonutCenter(donutFocus);
+      },
+      onClick: (evt, els) => {
+        if (!els.length) { donutFocus = null; updateDonutCenter(null); }
+        else {
+          const label = sdKeys[els[0].index];
+          donutFocus = (donutFocus === label) ? null : label;
+          updateDonutCenter(donutFocus);
+        }
+        charts.donut.update();
+      }
+    },
+    plugins: [{
+      id: 'focusExplode',
+      beforeDatasetsDraw(chart) {
+        if (!donutFocus) return;
+        const meta = chart.getDatasetMeta(0);
+        meta.data.forEach((arc, i) => {
+          arc.options.offset = (sdKeys[i] === donutFocus) ? 20 : 2;
+        });
+      }
+    }]
   });
-  document.getElementById('donutTotal').textContent = allFiltered().length;
+  updateDonutCenter(donutFocus);
   const legend = document.getElementById('donutLegend');
   legend.innerHTML = '';
   sdKeys.forEach(k => {
     const it = document.createElement('span');
-    it.className = 'dl-item';
+    it.className = 'dl-item' + (donutFocus === k ? ' active' : '');
+    it.style.cursor = 'pointer';
     it.innerHTML = `<i class="dl-dot" style="background:${STATUS_COLOR[k] || C.gray}"></i>${k} ${sd[k]}`;
+    it.onclick = () => { donutFocus = (donutFocus === k) ? null : k; updateDonutCenter(donutFocus); charts.donut.update(); };
     legend.appendChild(it);
   });
 

@@ -118,13 +118,24 @@ h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
 .dash { width: 16px; border-top: 2px dashed #C7C7CE; display: inline-block; }
 
 /* ---------- Bar list ---------- */
-.bar-row { display: grid; grid-template-columns: 170px 1fr 64px; align-items: center; gap: 12px; margin-bottom: 16px; }
-.bar-name { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-row { display: grid; grid-template-columns: 170px 1fr 64px; align-items: center; gap: 12px; margin-bottom: 16px; padding: 4px 8px; border-radius: 10px; margin-left: -8px; margin-right: -8px; cursor: pointer; transition: background .2s ease; }
+.bar-row:hover { background: #F5F8FC; }
+.bar-row:hover .bar-name { color: var(--primary); }
+.bar-row:hover .bar-value { color: var(--primary); }
+.bar-name { font-size: 13px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .2s ease; }
 .bar-track { position: relative; height: 14px; background: #F0F0F4; border-radius: 7px; }
-.bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 7px; }
-.bar-fill.on { background: var(--primary); }
+.bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 7px; overflow: hidden; }
+.bar-fill.on { background: linear-gradient(90deg, #0A84FF, var(--primary)); }
 .bar-fill.off { background: var(--amber); }
-.bar-value { font-size: 13px; font-weight: 600; text-align: right; }
+.bar-fill.on::after {
+  content: ""; position: absolute; top: 0; left: -40%; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+  animation: barShine 3.5s ease-in-out infinite;
+}
+.bar-row:hover .bar-fill.on::after { animation-duration: 1.1s; }
+.bar-row:hover .bar-fill.on { box-shadow: 0 0 10px rgba(0,113,227,.35); }
+@keyframes barShine { 0% { left: -40%; } 60%, 100% { left: 130%; } }
+.bar-value { font-size: 13px; font-weight: 600; text-align: right; transition: color .2s ease; }
 
 /* ---------- Donut ---------- */
 .donut-wrap { position: relative; width: 220px; height: 220px; margin: 0 auto; }
